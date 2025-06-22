@@ -281,6 +281,14 @@ function uiKimaiStart(settings) {
             })
             .then(res => {
                 selected.projectId = res.id
+                
+                debug(res);
+                debug(res[1]);                
+                if (res.name == "[Q] quit") {
+                  debug("Go back");
+                  throw new Error('Go back'); // or any other error message
+                }
+                
                 return kimaiList(settings, 'activities', false, {
                     filter: {
                         project: res.id
@@ -292,10 +300,23 @@ function uiKimaiStart(settings) {
             })
             .then(res => {
                 selected.activityId = res.id
+                
+                if (res.name == "[Q] quit") {
+                  debug("Go back");
+                  throw new Error('Go back'); // or any other error message
+                }
+                
                 return kimaiStart(settings, selected.projectId, selected.activityId)
             })
             .then(_ => {
                 resolve()
+            })
+            .catch(err => {
+                if (err.message === 'Go back') {
+                    resolve(); // or reject() if you want to handle it as an error
+                } else {
+                    reject(err);
+                }
             })
     })
 }
@@ -424,6 +445,53 @@ function kimaiList(settings, endpoint, print = false, options = false) {
                 qs: filter
             })
             .then(jsonList => {
+              
+                // jsonList.push({ id: -1, name: "[Q] quit" });
+              
+                // jsonList.pop();
+                jsonList.push(
+                    { tags: [ 'REVIEWED' ],
+                        id: -1,
+                        name: "[Q] quit",
+                        begin: '2026-06-17T17:22:00-0600',
+                        end: '2026-06-17T18:00:00-0600',
+                        duration: 2700,
+                        user:
+                        { apiToken: true,
+                          initials: 'SP',
+                          id: 16,
+                          alias: null,
+                          title: null,
+                          username: null,
+                          accountNumber: null,
+                          enabled: true,
+                          color: null },
+                        activity:
+                        { id: -1,
+                          project: null,
+                          name: 'quit',
+                          comment: null,
+                          visible: true,
+                          billable: false,
+                          color: '#d2d6de' },
+                        project:
+                        { id: -1,
+                          name: '[Q]',
+                          comment: null,
+                          visible: true,
+                          billable: true,
+                          globalActivities: true,
+                          color: '#d2d6de' },
+                        description: 'QUIT',
+                        rate: 0,
+                        internalRate: 0,
+                        exported: false,
+                        billable: false,
+                        metaFields: [] }
+                )
+              
+                debug(jsonList);
+              
                 if (print) {
                     printList(settings, jsonList, endpoint)
                 }
