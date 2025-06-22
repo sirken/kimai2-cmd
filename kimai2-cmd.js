@@ -120,18 +120,19 @@ function uiMainMenu(settings) {
             name: 'mainmenu',
             message: 'Select command',
             pageSize: process.stdout.rows - 1,
-            choices: [{
-                    name: 'Restart recent measurement',
-                    value: 'restart'
-                },
+            choices: [
                 {
                     name: 'Start new measurement',
                     value: 'start'
                 },
                 {
-                    name: 'Stop all active measurements',
-                    value: 'stop-all'
+                    name: 'Restart recent measurement',
+                    value: 'restart'
                 },
+                // {
+                //     name: 'Stop all active measurements',
+                //     value: 'stop-all'
+                // },
                 {
                     name: 'Stop an active measurement',
                     value: 'stop'
@@ -141,18 +142,18 @@ function uiMainMenu(settings) {
                     name: 'List active measurements',
                     value: 'list-active'
                 },
-                {
-                    name: 'List recent measurements',
-                    value: 'list-recent'
-                },
-                {
-                    name: 'List projects',
-                    value: 'list-projects'
-                },
-                {
-                    name: 'List activities',
-                    value: 'list-activities'
-                },
+                // {
+                //     name: 'List recent measurements',
+                //     value: 'list-recent'
+                // },
+                // {
+                //     name: 'List projects',
+                //     value: 'list-projects'
+                // },
+                // {
+                //     name: 'List activities',
+                //     value: 'list-activities'
+                // },
                 new inquirer.Separator(),
                 {
                     name: 'Exit',
