@@ -125,10 +125,10 @@ function uiMainMenu(settings) {
                     name: 'Start new measurement',
                     value: 'start'
                 },
-                {
-                    name: 'Restart recent measurement',
-                    value: 'restart'
-                },
+                // {
+                //     name: 'Restart recent measurement',
+                //     value: 'restart'
+                // },
                 // {
                 //     name: 'Stop all active measurements',
                 //     value: 'stop-all'
@@ -171,6 +171,11 @@ function uiMainMenu(settings) {
                         .then(res => {
                             return uiSelectMeasurement(res[1])
                         }).then(startId => {
+                          
+                            debug(startId)
+                            // debug(res)
+                            debug(res[0])
+
                             return kimaiRestart(settings, startId)
                         })
                         .then(res => uiMainMenu(res[0]))
@@ -285,8 +290,7 @@ function uiKimaiStart(settings) {
                 debug(res);
                 debug(res[1]);                
                 if (res.name == "[Q] quit") {
-                  debug("Go back");
-                  throw new Error('Go back'); // or any other error message
+                  throw new Error('Go back');
                 }
                 
                 return kimaiList(settings, 'activities', false, {
@@ -302,8 +306,7 @@ function uiKimaiStart(settings) {
                 selected.activityId = res.id
                 
                 if (res.name == "[Q] quit") {
-                  debug("Go back");
-                  throw new Error('Go back'); // or any other error message
+                  throw new Error('Go back');
                 }
                 
                 return kimaiStart(settings, selected.projectId, selected.activityId)
@@ -445,53 +448,10 @@ function kimaiList(settings, endpoint, print = false, options = false) {
                 qs: filter
             })
             .then(jsonList => {
-              
-                // jsonList.push({ id: -1, name: "[Q] quit" });
-              
-                // jsonList.pop();
-                jsonList.push(
-                    { tags: [ 'REVIEWED' ],
-                        id: -1,
-                        name: "[Q] quit",
-                        begin: '2026-06-17T17:22:00-0600',
-                        end: '2026-06-17T18:00:00-0600',
-                        duration: 2700,
-                        user:
-                        { apiToken: true,
-                          initials: 'SP',
-                          id: 16,
-                          alias: null,
-                          title: null,
-                          username: null,
-                          accountNumber: null,
-                          enabled: true,
-                          color: null },
-                        activity:
-                        { id: -1,
-                          project: null,
-                          name: 'quit',
-                          comment: null,
-                          visible: true,
-                          billable: false,
-                          color: '#d2d6de' },
-                        project:
-                        { id: -1,
-                          name: '[Q]',
-                          comment: null,
-                          visible: true,
-                          billable: true,
-                          globalActivities: true,
-                          color: '#d2d6de' },
-                        description: 'QUIT',
-                        rate: 0,
-                        internalRate: 0,
-                        exported: false,
-                        billable: false,
-                        metaFields: [] }
-                )
-              
-                debug(jsonList);
-              
+                if (endpoint == "projects" || endpoint == "activities") {
+                    jsonList.push({ id: -1, name: "[Q] quit" })
+                }
+                // debug(jsonList);
                 if (print) {
                     printList(settings, jsonList, endpoint)
                 }
