@@ -171,11 +171,6 @@ function uiMainMenu(settings) {
                         .then(res => {
                             return uiSelectMeasurement(res[1])
                         }).then(startId => {
-                          
-                            debug(startId)
-                            // debug(res)
-                            debug(res[0])
-
                             return kimaiRestart(settings, startId)
                         })
                         .then(res => uiMainMenu(res[0]))
@@ -316,7 +311,7 @@ function uiKimaiStart(settings) {
             })
             .catch(err => {
                 if (err.message === 'Go back') {
-                    resolve(); // or reject() if you want to handle it as an error
+                    resolve();
                 } else {
                     reject(err);
                 }
