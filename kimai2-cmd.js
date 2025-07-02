@@ -284,7 +284,7 @@ function uiKimaiStart(settings) {
                 
                 debug(res);
                 debug(res[1]);                
-                if (res.name == "[Q] quit") {
+                if (res.name == "quit") {
                   throw new Error('Go back');
                 }
                 
@@ -300,7 +300,7 @@ function uiKimaiStart(settings) {
             .then(res => {
                 selected.activityId = res.id
                 
-                if (res.name == "[Q] quit") {
+                if (res.name == "quit") {
                   throw new Error('Go back');
                 }
                 
@@ -444,7 +444,7 @@ function kimaiList(settings, endpoint, print = false, options = false) {
             })
             .then(jsonList => {
                 if (endpoint == "projects" || endpoint == "activities") {
-                    jsonList.push({ id: -1, name: "[Q] quit" })
+                    jsonList.push({ id: -1, parentTitle: 'Q', name: "quit" })
                 }
                 // debug(jsonList);
                 if (print) {
@@ -535,7 +535,7 @@ function printList(settings, arr, endpoint) {
                     console.log(element.project.name, '|', element.activity.name)
                 } else {
                     //active measurements:
-                    console.log(formattedDuration(element.begin), element.project.name, '|', element.activity.name)
+                    console.log(formattedDuration(element.begin), '|', element.project.customer.name, '|', element.project.name)
                 }
             }
         }
@@ -628,11 +628,15 @@ function uiAutocompleteSelect(thelist, message) {
         const names = []
         for (let i = 0; i < thelist.length; i++) {
             const element = thelist[i];
+            let title = '';
+            if (element.parentTitle) {
+              title = element.parentTitle + ' | ';
+            }
             choices.push({
                 name: element.name,
                 id: element.id
             })
-            names.push(element.name)
+            names.push(title + element.name)
         }
         inquirer.registerPrompt('autocomplete', require('inquirer-autocomplete-prompt'));
         inquirer
