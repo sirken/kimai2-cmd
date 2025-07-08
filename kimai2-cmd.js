@@ -478,9 +478,9 @@ function printList(settings, arr, endpoint) {
 
     //no result for scripts:
     if (arr.length == 0) {
-        if (program.argos) {
+        // if (program.argos) {
             console.log('No active measurements')
-        }
+        // }
         if (program.argosbutton) {
             console.log("Kimai2 |")
         }
@@ -581,23 +581,30 @@ function uiSelectMeasurement(thelist) {
         if (thelist.length == 0) {
             reject()
         }
-        for (let i = 0; i < thelist.length; i++) {
-            const element = thelist[i];
-            choices.push({
+        
+        // if only one option, auto-select it
+        if (thelist.length == 1) {
+            console.log(thelist[0].project.name + " | " + thelist[0].activity.name);
+            resolve(thelist[0].id);
+        } else {
+            for (let i = 0; i < thelist.length; i++) {
+              const element = thelist[i];
+              choices.push({
                 name: element.project.name + " | " + element.activity.name,
                 value: element.id
+              })
+            }
+            inquirer
+            .prompt([{
+              type: 'list',
+              name: 'selectMeasurement',
+              message: 'Select measurement',
+              pageSize: process.stdout.rows - 1,
+              choices: choices
+            }]).then(answers => {
+              resolve(answers.selectMeasurement)
             })
         }
-        inquirer
-            .prompt([{
-                type: 'list',
-                name: 'selectMeasurement',
-                message: 'Select measurement',
-                pageSize: process.stdout.rows - 1,
-                choices: choices
-            }]).then(answers => {
-                resolve(answers.selectMeasurement)
-            })
     })
 }
 
@@ -624,44 +631,51 @@ function uiEnterDescription() {
  */
 function uiAutocompleteSelect(thelist, message) {
     return new Promise((resolve, reject) => {
-        const choices = []
-        const names = []
-        for (let i = 0; i < thelist.length; i++) {
-            const element = thelist[i];
-            let title = '';
-            if (element.parentTitle) {
-              title = element.parentTitle + ' | ';
-            }
-            choices.push({
-                name: element.name,
-                id: element.id
-            })
-            names.push(title + element.name)
-        }
-        inquirer.registerPrompt('autocomplete', require('inquirer-autocomplete-prompt'));
-        inquirer
-            .prompt([{
-                type: 'autocomplete',
-                name: 'autoSelect',
-                message: message,
-                pageSize: process.stdout.rows - 2,
-                source: function (answers, input) {
-                    input = input || '';
-                    return new Promise((resolve, reject) => {
-                        var fuzzyResult = fuzzy.filter(input, names);
-                        resolve(
-                            fuzzyResult.map(function (el) {
-                                return el.original;
-                            })
-                        )
-                    })
+      
+        // Auto-select billing
+        if (message == "Select activity" && thelist[0].name == "Billable Hourly") {
+          resolve(thelist[0]);
+        } else {
+          
+            const choices = []
+            const names = []
+            for (let i = 0; i < thelist.length; i++) {
+                const element = thelist[i];
+                let title = '';
+                if (element.parentTitle) {
+                  title = element.parentTitle + ' | ';
                 }
-            }]).then(answers => {
-                let ind = names.indexOf(answers.autoSelect)
-                let selectedChoice = choices[ind]
-                // console.log(selectedChoice)
-                resolve(selectedChoice)
-            })
+                choices.push({
+                    name: element.name,
+                    id: element.id
+                })
+                names.push(title + element.name)
+            }
+            inquirer.registerPrompt('autocomplete', require('inquirer-autocomplete-prompt'));
+            inquirer
+                .prompt([{
+                    type: 'autocomplete',
+                    name: 'autoSelect',
+                    message: message,
+                    pageSize: process.stdout.rows - 2,
+                    source: function (answers, input) {
+                        input = input || '';
+                        return new Promise((resolve, reject) => {
+                            var fuzzyResult = fuzzy.filter(input, names);
+                            resolve(
+                                fuzzyResult.map(function (el) {
+                                    return el.original;
+                                })
+                            )
+                        })
+                    }
+                }]).then(answers => {
+                    let ind = names.indexOf(answers.autoSelect)
+                    let selectedChoice = choices[ind]
+                    // console.log(selectedChoice)
+                    resolve(selectedChoice)
+                })
+          }
     })
 }
 
