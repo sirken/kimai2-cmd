@@ -120,18 +120,19 @@ function uiMainMenu(settings) {
             name: 'mainmenu',
             message: 'Select command',
             pageSize: process.stdout.rows - 1,
-            choices: [{
-                    name: 'Restart recent measurement',
-                    value: 'restart'
-                },
+            choices: [
                 {
                     name: 'Start new measurement',
                     value: 'start'
                 },
-                {
-                    name: 'Stop all active measurements',
-                    value: 'stop-all'
-                },
+                // {
+                //     name: 'Restart recent measurement',
+                //     value: 'restart'
+                // },
+                // {
+                //     name: 'Stop all active measurements',
+                //     value: 'stop-all'
+                // },
                 {
                     name: 'Stop an active measurement',
                     value: 'stop'
@@ -141,18 +142,18 @@ function uiMainMenu(settings) {
                     name: 'List active measurements',
                     value: 'list-active'
                 },
-                {
-                    name: 'List recent measurements',
-                    value: 'list-recent'
-                },
-                {
-                    name: 'List projects',
-                    value: 'list-projects'
-                },
-                {
-                    name: 'List activities',
-                    value: 'list-activities'
-                },
+                // {
+                //     name: 'List recent measurements',
+                //     value: 'list-recent'
+                // },
+                // {
+                //     name: 'List projects',
+                //     value: 'list-projects'
+                // },
+                // {
+                //     name: 'List activities',
+                //     value: 'list-activities'
+                // },
                 new inquirer.Separator(),
                 {
                     name: 'Exit',
@@ -280,6 +281,13 @@ function uiKimaiStart(settings) {
             })
             .then(res => {
                 selected.projectId = res.id
+                
+                debug(res);
+                debug(res[1]);                
+                if (res.name == "quit") {
+                  throw new Error('Go back');
+                }
+                
                 return kimaiList(settings, 'activities', false, {
                     filter: {
                         project: res.id
@@ -291,10 +299,22 @@ function uiKimaiStart(settings) {
             })
             .then(res => {
                 selected.activityId = res.id
+                
+                if (res.name == "quit") {
+                  throw new Error('Go back');
+                }
+                
                 return kimaiStart(settings, selected.projectId, selected.activityId)
             })
             .then(_ => {
                 resolve()
+            })
+            .catch(err => {
+                if (err.message === 'Go back') {
+                    resolve();
+                } else {
+                    reject(err);
+                }
             })
     })
 }
@@ -423,6 +443,10 @@ function kimaiList(settings, endpoint, print = false, options = false) {
                 qs: filter
             })
             .then(jsonList => {
+                if (endpoint == "projects" || endpoint == "activities") {
+                    jsonList.push({ id: -1, parentTitle: 'Q', name: "quit" })
+                }
+                // debug(jsonList);
                 if (print) {
                     printList(settings, jsonList, endpoint)
                 }
@@ -454,9 +478,9 @@ function printList(settings, arr, endpoint) {
 
     //no result for scripts:
     if (arr.length == 0) {
-        if (program.argos) {
+        // if (program.argos) {
             console.log('No active measurements')
-        }
+        // }
         if (program.argosbutton) {
             console.log("Kimai2 |")
         }
@@ -511,7 +535,7 @@ function printList(settings, arr, endpoint) {
                     console.log(element.project.name, '|', element.activity.name)
                 } else {
                     //active measurements:
-                    console.log(formattedDuration(element.begin), element.project.name, '|', element.activity.name)
+                    console.log(formattedDuration(element.begin), '|', element.project.customer.name, '|', element.project.name)
                 }
             }
         }
@@ -557,23 +581,30 @@ function uiSelectMeasurement(thelist) {
         if (thelist.length == 0) {
             reject()
         }
-        for (let i = 0; i < thelist.length; i++) {
-            const element = thelist[i];
-            choices.push({
+        
+        // if only one option, auto-select it
+        if (thelist.length == 1) {
+            console.log(thelist[0].project.name + " | " + thelist[0].activity.name);
+            resolve(thelist[0].id);
+        } else {
+            for (let i = 0; i < thelist.length; i++) {
+              const element = thelist[i];
+              choices.push({
                 name: element.project.name + " | " + element.activity.name,
                 value: element.id
+              })
+            }
+            inquirer
+            .prompt([{
+              type: 'list',
+              name: 'selectMeasurement',
+              message: 'Select measurement',
+              pageSize: process.stdout.rows - 1,
+              choices: choices
+            }]).then(answers => {
+              resolve(answers.selectMeasurement)
             })
         }
-        inquirer
-            .prompt([{
-                type: 'list',
-                name: 'selectMeasurement',
-                message: 'Select measurement',
-                pageSize: process.stdout.rows - 1,
-                choices: choices
-            }]).then(answers => {
-                resolve(answers.selectMeasurement)
-            })
     })
 }
 
@@ -600,40 +631,51 @@ function uiEnterDescription() {
  */
 function uiAutocompleteSelect(thelist, message) {
     return new Promise((resolve, reject) => {
-        const choices = []
-        const names = []
-        for (let i = 0; i < thelist.length; i++) {
-            const element = thelist[i];
-            choices.push({
-                name: element.name,
-                id: element.id
-            })
-            names.push(element.name)
-        }
-        inquirer.registerPrompt('autocomplete', require('inquirer-autocomplete-prompt'));
-        inquirer
-            .prompt([{
-                type: 'autocomplete',
-                name: 'autoSelect',
-                message: message,
-                pageSize: process.stdout.rows - 2,
-                source: function (answers, input) {
-                    input = input || '';
-                    return new Promise((resolve, reject) => {
-                        var fuzzyResult = fuzzy.filter(input, names);
-                        resolve(
-                            fuzzyResult.map(function (el) {
-                                return el.original;
-                            })
-                        )
-                    })
+      
+        // Auto-select billing
+        if (message == "Select activity" && thelist[0].name == "Billable Hourly") {
+          resolve(thelist[0]);
+        } else {
+          
+            const choices = []
+            const names = []
+            for (let i = 0; i < thelist.length; i++) {
+                const element = thelist[i];
+                let title = '';
+                if (element.parentTitle) {
+                  title = element.parentTitle + ' | ';
                 }
-            }]).then(answers => {
-                let ind = names.indexOf(answers.autoSelect)
-                let selectedChoice = choices[ind]
-                // console.log(selectedChoice)
-                resolve(selectedChoice)
-            })
+                choices.push({
+                    name: element.name,
+                    id: element.id
+                })
+                names.push(title + element.name)
+            }
+            inquirer.registerPrompt('autocomplete', require('inquirer-autocomplete-prompt'));
+            inquirer
+                .prompt([{
+                    type: 'autocomplete',
+                    name: 'autoSelect',
+                    message: message,
+                    pageSize: process.stdout.rows - 2,
+                    source: function (answers, input) {
+                        input = input || '';
+                        return new Promise((resolve, reject) => {
+                            var fuzzyResult = fuzzy.filter(input, names);
+                            resolve(
+                                fuzzyResult.map(function (el) {
+                                    return el.original;
+                                })
+                            )
+                        })
+                    }
+                }]).then(answers => {
+                    let ind = names.indexOf(answers.autoSelect)
+                    let selectedChoice = choices[ind]
+                    // console.log(selectedChoice)
+                    resolve(selectedChoice)
+                })
+          }
     })
 }
 
